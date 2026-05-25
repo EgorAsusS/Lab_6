@@ -33,7 +33,9 @@ bool calculate_expression(char* filepath, int* Tab);
 int main() {
 	int Tab[256] = { 0 };
 	calculate_expression("data.txt", Tab);
-	printf("y = %d", Tab['y']);
+	printf("a = %d\n", Tab['a']);
+	printf("b = %d\n", Tab['b']);
+	printf("y = %d\n", Tab['y']);
 	return 0;
 }
 
@@ -63,7 +65,7 @@ bool calculate_expression(char* filepath, int* Tab) {
 				count++;
 			} while (flag > 0 && el == ' ');
 			if (flag > 0 && el == 61) {
-				fseek(file, -count, SEEK_CUR);
+				fseek(file, -count, SEEK_CUR); // ERROR
 				str = form_POLIS(file, Tab);
 			}
 		}
@@ -78,7 +80,7 @@ bool calculate_expression(char* filepath, int* Tab) {
 						count++;
 					} while (flag > 0 && el == ' ');
 					if (flag > 0 && el == 61) {
-						fseek(file, -count, SEEK_CUR);
+						fseek(file, -count, SEEK_CUR); // ERROR
 						vars = form_POLIS(file, Tab);
 						flag = calculate_POLIS(vars, Tab);
 					}
@@ -104,6 +106,7 @@ char* form_POLIS(FILE* file, int* Tab) {
 		int cmp = 0;
 		int value = 0;
 		bool var = 0;
+		unsigned char flag_op = 0; // Флаг на операнды на начало
 		if (file && str) {
 			while (flag > 0 && el) {
 				flag = fscanf(file, "%c", &el);
@@ -111,8 +114,23 @@ char* form_POLIS(FILE* file, int* Tab) {
 					if ((97 <= el && el <= 122) || (65 <= el && el <= 90) || (48 <= el && el <= 57)) { // Операнды
 						str[count] = el;
 						count++;
+						if (flag_op == 0) {
+							flag_op = 1;
+						}
 					}
 					else if ((40 <= el && el <= 43) || el == 45 || el == 47 || el == 61) { // Операции
+						if (flag_op == 1) {
+							flag_op = 0;
+						}
+						else if (flag_op != 2 && (el == 43 || el == 45)) {
+							str[count] = '0';
+							count++;
+							flag_op = 2;
+						}
+						else {
+							// ERROR
+							printf("ERROR\n");
+						}
 						if (isEmpty(st)) {
 							if (Push(&st, el, 0)) {
 								//ERROR
@@ -155,7 +173,7 @@ char* form_POLIS(FILE* file, int* Tab) {
 							}
 						}
 					}
-					else if (el != ' ') {
+					else if (el != ' ') { // Выход по /n сделать
 						flag = -3;
 					}
 				}
@@ -172,7 +190,6 @@ char* form_POLIS(FILE* file, int* Tab) {
 }
 
 bool calculate_POLIS(char* str, int* Tab) {
-	//char answer = 0;
 	int a = 0;
 	int b = 0;
 	Stek st = { NULL, 0 };
@@ -180,7 +197,6 @@ bool calculate_POLIS(char* str, int* Tab) {
 	int flag = 1;
 	bool var = 0;
 	if (str && Tab) {
-		//answer = *str;
 		ptr_str = str;
 		while (*ptr_str) {
 			var = 0;

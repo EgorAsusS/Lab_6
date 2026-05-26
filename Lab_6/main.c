@@ -2,12 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#define n 2000
 
 //Пример формирования стека
 //Объявляем новый тип данных, который описывает узел стека 
 struct nodeList {
-	bool var;
-	int inf;
+	int var;
+	double value;
 	struct nodeList* next;
 };
 
@@ -20,28 +21,32 @@ struct StekList {
 typedef struct nodeList Node;
 typedef struct StekList Stek;
 
-bool Push(Stek* st, int value, bool var);
-bool Pop(Stek* st, int* value, bool* var);
-bool ShowTop(Stek st, int* value, bool* var);
+bool Push(Stek* st, double value, int var);
+bool Pop(Stek* st, double* value, int* var);
+bool ShowTop(Stek st, double* value, int* var);
 bool isEmpty(Stek st);
-void ClearStek(Stek* st);
+void ClearStek(Stek st);
 
-char* form_POLIS(FILE* file, int* Tab);
-bool calculate_POLIS(char* str, int* Tab);
-int calculate_expression(char* filepath, int* Tab);
+char* form_POLIS(char* input);
+int calculate_POLIS(char* str, int* Tab, double* answer);
+int calculate_expression(char* filepath, double* answer);
 
 int main() {
-	int Tab[256] = { 0 };
-	int answer = calculate_expression("data.txt", Tab);
-	if (answer != -1) {
-		printf("%c = %d\n", (char)answer, Tab[answer]);
+	double answer = 0;
+	int flag = calculate_expression("data.txt", &answer);
+	if (flag > 0) {
+		printf("answer = %.14lf\n", answer);
+	}
+	else {
+		printf("ERROR\n");
 	}
 	return 0;
 }
 
-int calculate_expression(char* filepath, int* Tab) {
-	int answer = -1;
-	if (filepath && Tab) {
+int calculate_expression(char* filepath, double* answer) {
+	int flag = 1;
+	if (filepath && answer) {
+		int Tab[256] = { 0 };
 		Tab[(unsigned char)'('] = 0;
 		Tab[(unsigned char)')'] = 1;
 		Tab[(unsigned char)'='] = 2;
@@ -53,189 +58,205 @@ int calculate_expression(char* filepath, int* Tab) {
 			Tab[i + 48] = i;
 		}
 		FILE* file = fopen(filepath, "r");
-		char* str = NULL;
-		char* vars = NULL;
-		int flag = 1;
+		char* input = NULL;
+		char* output = NULL;
 		char el = 0;
-		long count = 0;
+		int val = 0;
+		size_t count = 0;
 		if (file) {
-			flag = fscanf(file, "%c", &el);
-			count++;
-			if (flag > 0 && (97 <= el && el <= 122) || (65 <= el && el <= 90)) {
-				answer = (int)el;
-				do {
+			input = (char*)calloc(n, sizeof(char));
+			if (input) {
+				while (count < n - 1 && flag > 0) {
 					flag = fscanf(file, "%c", &el);
-					count++;
-				} while (flag > 0 && el == ' ');
-				if (flag > 0 && el == 61) {
-					if (fseek(file, -count, SEEK_CUR)) {
-						flag = -2;
-					}
-					str = form_POLIS(file, Tab);
-				}
-			}
-			if (str) {
-				while (flag > 0) {
-					count = 0;
-					flag = fscanf(file, "%c", &el);
-					count++;
-					if (flag > 0 && (97 <= el && el <= 122) || (65 <= el && el <= 90)) {
-						do {
-							flag = fscanf(file, "%c", &el);
+					if (flag > 0) {
+						if (el != '\n') {
+							input[count] = el;
 							count++;
-						} while (flag > 0 && el == ' ');
-						if (flag > 0 && el == 61) {
-							if (fseek(file, -count, SEEK_CUR)) {
-								flag = -2;
-							}
-							vars = form_POLIS(file, Tab);
-							flag = calculate_POLIS(vars, Tab);
+						}
+						else {
+							flag = 0;
 						}
 					}
-					else if (el != ' ' && el != '\n') {
-						flag = -3;
+				}
+				flag = 1;
+				while (flag > 0) {
+					flag = fscanf(file, " %c = %d \n", &el, &val);
+					if (flag > 1) {
+						if ((97 <= el && el <= 122) || (65 <= el && el <= 90)) {
+							Tab[(unsigned char)el] = val;
+						}
+						else {
+							flag = -4;
+						}
+					}
+					else {
+						flag = -2; // 
 					}
 				}
+				output = form_POLIS(input);
+				flag = calculate_POLIS(output, Tab, answer);
 			}
-			flag = calculate_POLIS(str, Tab);
+			if (fclose(file)) {
+				flag = -1;// -5 или другое доделать
+			}
 		}
+		free(input);
+		free(output);
+		input = NULL;
+		output = NULL;
 	}
-	return answer;
+	return flag;
 }
 
-char* form_POLIS(FILE* file, int* Tab) {
-	if (file && Tab) {
+char* form_POLIS(char* input) {
+	if (input) {
+		// Приоритеты операций
+		int Tab[256] = { 0 };
+		Tab[(unsigned char)'('] = 0;
+		Tab[(unsigned char)')'] = 1;
+		Tab[(unsigned char)'='] = 2;
+		Tab[(unsigned char)'+'] = 6;
+		Tab[(unsigned char)'-'] = 6;
+		Tab[(unsigned char)'*'] = 7;
+		Tab[(unsigned char)'/'] = 7;
+
+		char* output = (char*)calloc(n, sizeof(char)); // Сколько буффер
 		int flag = 1;
-		char* str = (char*)calloc(1000, sizeof(char)); // Сколько буффер
-		char el = 1;
+		char* ptr_str = 0;
 		size_t count = 0;
 		Stek st = { NULL, 0 };
 		int cmp = 0;
-		int value = 0;
-		bool var = 0;
+		double value = 0;
+		int var = 0;
 		unsigned char flag_op = 0; // Флаг на операнды на начало
-		if (str) {
-			while (flag > 0 && el) {
-				flag = fscanf(file, "%c", &el);
-				if (flag > 0) {
-					if ((97 <= el && el <= 122) || (65 <= el && el <= 90) || (48 <= el && el <= 57)) { // Операнды
-						str[count] = el;
+		if (output) {
+			ptr_str = input;
+			cmp = 0;
+			value = 0;
+			var = 0;
+			while (*ptr_str && count < n - 1) {
+				if ((97 <= *ptr_str && *ptr_str <= 122) || (65 <= *ptr_str && *ptr_str <= 90) || (48 <= *ptr_str && *ptr_str <= 57)) { // Операнды
+					output[count] = *ptr_str;
+					count++;
+					if (flag_op == 0) {
+						flag_op = 1;
+					}
+				}
+				else if ((40 <= *ptr_str && *ptr_str <= 43) || *ptr_str == 45 || *ptr_str == 47 || *ptr_str == 61) { // Операции
+					if (flag_op == 1) {
+						flag_op = 0;
+					}
+					else if (flag_op != 2 && (*ptr_str == 43 || *ptr_str == 45)) {
+						output[count] = '0';
 						count++;
-						if (flag_op == 0) {
-							flag_op = 1;
+						flag_op = 2;
+					}
+					else {
+						flag = -4; // Неверные операции
+					}
+					if (isEmpty(st)) {
+						if (Push(&st, 0, *ptr_str)) {
+							flag = 0; //ERROR
 						}
 					}
-					else if ((40 <= el && el <= 43) || el == 45 || el == 47 || el == 61) { // Операции
-						if (flag_op == 1) {
-							flag_op = 0;
-						}
-						else if (flag_op != 2 && (el == 43 || el == 45)) {
-							str[count] = '0';
-							count++;
-							flag_op = 2;
+					else {
+						if (*ptr_str == 61) {
+							cmp = 9;
 						}
 						else {
-							flag = -4; // Неверные операции
+							cmp = Tab[*ptr_str];
 						}
-						if (isEmpty(st)) {
-							if (Push(&st, el, 0)) {
-								flag = 0; //ERROR
-							}
-						}
-						else {
-							if (el == 61) {
-								cmp = 9;
+						if (cmp) {
+							ShowTop(st, &value, &var);
+							if (cmp > Tab[var]) {
+								if (Push(&st, 0, *ptr_str)) {
+									flag = 0; //ERROR
+								}
 							}
 							else {
-								cmp = Tab[el];
-							}
-							if (cmp) {
-								ShowTop(st, &value, &var);
-								if (cmp > Tab[value]) {
-									if (Push(&st, el, 0)) {
+								while (flag >= 0 && ShowTop(st, &value, &var) && cmp <= Tab[var]) {
+									if (Pop(&st, &value, &var)) {
+										output[count] = (char)var;
+										count++;
+									}
+									else {
+										flag = 0; // ERROR
+									}
+								}
+								if (*ptr_str != 41) { // Если скобки, то взаимно уничтожаются
+									if (Push(&st, 0, *ptr_str)) {
 										flag = 0; //ERROR
 									}
 								}
 								else {
-									while (flag >= 0 && ShowTop(st, &value, &var) && cmp <= Tab[value]) {
-										if (Pop(&st, &value, &var)) {
-											str[count] = (char)value;
-											count++;
-										}
-										else {
-											flag = 0; // ERROR
-										}
+									if (!Pop(&st, &value, &var)) {
+										flag = 0; // ERROR
 									}
-									if (el != 41) { // Если скобки, то взаимно уничтожаются
-										if (Push(&st, el, 0)) {
-											flag = 0; //ERROR
-										}
-									}
-									else {
-										if (!Pop(&st, &value, &var)) {
-											flag = 0; // ERROR
-										}
-									}
-								}
-							}
-							else {
-								if (Push(&st, el, 0)) {
-									flag = 0; //ERROR
 								}
 							}
 						}
-					}
-					else if (el != ' ') { // Выход по /n сделать
-						flag = -3;
+						else {
+							if (Push(&st, 0, *ptr_str)) {
+								flag = 0; //ERROR
+							}
+						}
 					}
 				}
+				else if (*ptr_str != ' ') {
+					flag = -3;
+				}
+				ptr_str++;
 			}
-			while (flag >= 0 && st.Top) {
+			while (count < n - 1 && flag >= 0 && st.Top) {
 				if (!Pop(&st, &value, &var)) {
 					flag = 0; // ERROR
 				}
-				str[count] = (char)value;
+				output[count] = (char)var;
 				count++;
 			}
 			// Error with size of buffer
-			str[count] = '\0';
+			ClearStek(st);
 		}
-		return str;
+		return output;
 	}
 	return NULL;
 }
 
-bool calculate_POLIS(char* str, int* Tab) {
-	int a = 0;
-	int b = 0;
+int calculate_POLIS(char* str, int* Tab, double* answer) {
+	double a = 0;
+	double b = 0;
 	Stek st = { NULL, 0 };
 	char* ptr_str = 0;
 	int flag = 1;
-	bool var = 0;
-	if (str && Tab) {
+	int var_a = 0;
+	int var_b = 0;
+	if (str && Tab && answer) {
 		ptr_str = str;
-		while (*ptr_str) {
-			var = 0;
+		while (*ptr_str && flag > 0) {
+			a = 0;
+			b = 0;
+			var_a = 0;
+			var_b = 0;
 			if ((97 <= *ptr_str && *ptr_str <= 122) || (65 <= *ptr_str && *ptr_str <= 90) || (48 <= *ptr_str && *ptr_str <= 57)) { // Операнды
-				if (!Push(&st, *ptr_str, 1)) {
+				if (!Push(&st, 0, *ptr_str)) {
 					flag = 0; //ERROR
 					continue;
 				}
 			}
 			else if (*ptr_str == 42 || *ptr_str == 43 || *ptr_str == 45 || *ptr_str == 47 || *ptr_str == 61) { // Операции
-				if (!Pop(&st, &a, &var)) {
+				if (!Pop(&st, &a, &var_a)) {
 					flag = 0;
 					continue;
 				}
-				if (var) {
-					a = Tab[a];
+				if (var_a != -1) {
+					a = Tab[var_a];
 				}
-				if (!Pop(&st, &b, &var)) {
+				if (!Pop(&st, &b, &var_b)) {
 					flag = 0;
 					continue;
 				}
-				if (var && *ptr_str != 61) {
-					b = Tab[b];
+				if (var_b != -1 && *ptr_str != 61) {
+					b = Tab[var_b];
 				}
 				switch (*ptr_str) {
 				case 42: // *
@@ -256,16 +277,21 @@ bool calculate_POLIS(char* str, int* Tab) {
 					}
 					break;
 				case 61: // =
-					if ((97 <= b && b <= 122) || (65 <= b && b <= 90)) {
-						Tab[b] = a;
-						b = Tab[b];
+					if (var_b != -1) {
+						if ((97 <= var_b && var_b <= 122) || (65 <= var_b && var_b <= 90)) {
+							Tab[var_b] = a;
+							b = a;
+						}
+						else {
+							flag = -4; // const = variable
+						}
 					}
 					else {
 						flag = -4; // const = variable
 					}
 					break;
 				}
-				if(Push(&st, b, 0)){
+				if(!Push(&st, b, -1)){
 					flag = 0;
 					continue;
 				}
@@ -275,16 +301,19 @@ bool calculate_POLIS(char* str, int* Tab) {
 			}
 			ptr_str++;
 		}
-		return true;
+		if (!Pop(&st, answer, &var_b)) {
+			flag = 0;
+		}
 	}
-	return false;
+	ClearStek(st);
+	return flag;
 }
 
-bool Push(Stek* st, int value, bool var) {
+bool Push(Stek* st, double value, int var) {
 	if (st) {
 		Node* el = (Node*)malloc(sizeof(Node));
 		if (el) {
-			el->inf = value;
+			el->value = value;
 			el->var = var;
 			el->next = NULL;
 			if (st->Top == NULL)
@@ -303,12 +332,12 @@ bool Push(Stek* st, int value, bool var) {
 	return false;
 }
 
-bool Pop(Stek* st, int* value, bool* var) {
+bool Pop(Stek* st, double* value, int* var) {
 	if (st && value && var) {
 		Node* PtrIx = st->Top;
 		if (PtrIx) {
 			st->Top = st->Top->next; // Обновление головы
-			*value = PtrIx->inf;
+			*value = PtrIx->value;
 			*var = PtrIx->var;
 			free(PtrIx);
 			PtrIx = NULL;
@@ -319,10 +348,10 @@ bool Pop(Stek* st, int* value, bool* var) {
 	return false;
 }
 
-bool ShowTop(Stek st, int* value, bool* var) {
-	if (value) {
+bool ShowTop(Stek st, double* value, int* var) {
+	if (value && var) {
 		if (st.Top) {
-			*value = st.Top->inf;
+			*value = st.Top->value;
 			*var = st.Top->var;
 			return true;
 		}
@@ -336,15 +365,18 @@ bool isEmpty(Stek st) {
 	return false;
 }
 
-void ClearStek(Stek* st) {
+void ClearStek(Stek st) {
 	Node* PtrIx = NULL;
-	while (st) {
-		Node* PtrIx = st->Top;
-		if (PtrIx) {
-			st->Top = st->Top->next; // Обновление головы
-			free(PtrIx);
-			PtrIx = NULL;
-			st->size--;
-		}
+	//while (st) {
+		//Node* PtrIx = st->Top;
+	PtrIx = st.Top;
+	if (PtrIx) {
+		st.Top = st.Top->next; // Обновление головы
+		//st->Top = st->Top->next; // Обновление головы
+		free(PtrIx);
+		PtrIx = NULL;
+		//st->size--;
+		st.size--;
 	}
+	//}
 }

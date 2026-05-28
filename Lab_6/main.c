@@ -155,7 +155,7 @@ char* form_POLIS(char* input) {
 						flag = -4; // Неверные операции
 					}
 					if (isEmpty(st)) {
-						if (Push(&st, 0, *ptr_str)) {
+						if (!Push(&st, 0, *ptr_str)) {
 							flag = 0; //ERROR
 						}
 					}
@@ -169,7 +169,7 @@ char* form_POLIS(char* input) {
 						if (cmp) {
 							ShowTop(st, &value, &var);
 							if (cmp > Tab[var]) {
-								if (Push(&st, 0, *ptr_str)) {
+								if (!Push(&st, 0, *ptr_str)) {
 									flag = 0; //ERROR
 								}
 							}
@@ -184,7 +184,7 @@ char* form_POLIS(char* input) {
 									}
 								}
 								if (*ptr_str != 41) { // Если скобки, то взаимно уничтожаются
-									if (Push(&st, 0, *ptr_str)) {
+									if (!Push(&st, 0, *ptr_str)) {
 										flag = 0; //ERROR
 									}
 								}
@@ -196,7 +196,7 @@ char* form_POLIS(char* input) {
 							}
 						}
 						else {
-							if (Push(&st, 0, *ptr_str)) {
+							if (!Push(&st, 0, *ptr_str)) {
 								flag = 0; //ERROR
 							}
 						}
@@ -207,12 +207,15 @@ char* form_POLIS(char* input) {
 				}
 				ptr_str++;
 			}
-			while (count < n - 1 && flag >= 0 && st.Top) {
+			//while (count < n - 1 && flag >= 0 && st.Top) {
+			while (count < n - 1 && st.Top) {
 				if (!Pop(&st, &value, &var)) {
 					flag = 0; // ERROR
 				}
-				output[count] = (char)var;
-				count++;
+				if (var != 40) { // '('
+					output[count] = (char)var;
+					count++;
+				}
 			}
 			// Error with size of buffer
 			ClearStek(st);
@@ -277,7 +280,7 @@ int calculate_POLIS(char* str, int* Tab, double* answer) {
 					}
 					break;
 				case 61: // =
-					if (var_b != -1) {
+					//if (var_b != -1) {
 						if ((97 <= var_b && var_b <= 122) || (65 <= var_b && var_b <= 90)) {
 							Tab[var_b] = a;
 							b = a;
@@ -285,10 +288,10 @@ int calculate_POLIS(char* str, int* Tab, double* answer) {
 						else {
 							flag = -4; // const = variable
 						}
-					}
-					else {
-						flag = -4; // const = variable
-					}
+					//}
+					//else {
+					//	flag = -4; // const = variable
+					//}
 					break;
 				}
 				if(!Push(&st, b, -1)){

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#define n 2000
+#define n 2001
 
 //Пример формирования стека
 //Объявляем новый тип данных, который описывает узел стека 
@@ -34,32 +34,72 @@ char* read_file(char* filepath, int** Tab);
 int main() {
 	int* Tab = NULL;
 	char* output = NULL;
+	char* input = NULL;
 	double answer = 0;
+	int flag = 0;
+	char filepath[100] = "data";
+	FILE* file = NULL;
+	char el = 0;
 
-	char* input = read_file("data.txt", &Tab);
+	// Для ручных тестов
+
+	input = read_file("data.txt", &Tab);
 	output = form_POLIS(input);
-	int flag = calculate_POLIS(output, Tab, &answer);
+	flag = calculate_POLIS(output, Tab, &answer);
 	if (flag > 0) {
-		if (input) {
-			char* current = input;
-			bool flag = 1;
-			if ((97 <= *current && *current <= 122) || (65 <= *current && *current <= 90)) {
-				while (*current && *current != '=') {
-					current++;
-				}
-				if (*current) { 
-					printf("%c = ", *input);
-					flag = 0;
-				}
-			}
-			if (flag == 1) {
-				printf("answer = ");
-			}
+		if (Tab[0]) {
+			printf("%c = %.14lf\n", Tab[0], answer);	
+		}
+		else {
 			printf("%.14lf\n", answer);
 		}
 	}
 	else {
 		printf("ERROR\n");
+	}
+
+	// Тесты подряд с файлов
+	for (int i = 1; i < 16; i++) {
+		printf("Test from data%d.txt\n", i);
+		if (i <= 9) {
+			filepath[4] = i + 48;
+			filepath[5] = '.';
+			filepath[6] = 't';
+			filepath[7] = 'x';
+			filepath[8] = 't';
+			filepath[9] = 0;
+		}
+		else {
+			filepath[4] = '1';
+			filepath[5] = (i - 10) + 48;
+			filepath[6] = '.';
+			filepath[7] = 't';
+			filepath[8] = 'x';
+			filepath[9] = 't';
+			filepath[10] = 0;
+		}
+		file = fopen(filepath, "r");
+		while (fscanf(file, "%c", &el) > 0) {
+			printf("%c", el);
+		}
+		printf("\n\n");
+		fclose(file);
+
+		input = read_file(filepath, &Tab);
+		output = form_POLIS(input);
+		flag = calculate_POLIS(output, Tab, &answer);
+		if (flag > 0) {
+			if (Tab[0]) {
+				printf("%c = %.14lf\n", Tab[0], answer);
+			}
+			else {
+				printf("%.14lf\n", answer);
+			}
+		}
+		else {
+			printf("ERROR\n");
+		}
+		printf("\n\n");
 	}
 
 	free(input);
@@ -76,16 +116,6 @@ char* read_file(char* filepath, int** Tab) {
 	if (filepath && Tab) {
 		*Tab = (int*)calloc(256, sizeof(int));
 		if (*Tab) {
-			(*Tab)[(unsigned char)'('] = 0;
-			(*Tab)[(unsigned char)')'] = 1;
-			(*Tab)[(unsigned char)'='] = 2;
-			(*Tab)[(unsigned char)'+'] = 6;
-			(*Tab)[(unsigned char)'-'] = 6;
-			(*Tab)[(unsigned char)'*'] = 7;
-			(*Tab)[(unsigned char)'/'] = 7;
-			for (unsigned char i = 0; i < 10; i++) {
-				(*Tab)[i + 48] = i;
-			}
 			FILE* file = fopen(filepath, "r");
 			int flag = 1;
 			char el = 0;
@@ -94,11 +124,14 @@ char* read_file(char* filepath, int** Tab) {
 			if (file) {
 				input = (char*)calloc(n, sizeof(char));
 				if (input) {
-					while (count < n - 1 && el != '\n' && flag > 0) {
+					while (el != '\n' && flag > 0) {
 						flag = fscanf(file, "%c", &el);
 						if (flag > 0 && el != '\n') {
 							input[count] = el;
 							count++;
+						}
+						if (count >= n - 1) {
+							flag = -5;
 						}
 					}
 					while (flag > 0) {
@@ -158,7 +191,7 @@ char* form_POLIS(char* input) {
 			cmp = 0;
 			value = 0;
 			var = 0;
-			while (*ptr_str && flag > 0 && count < n - 1) {
+			while (*ptr_str && flag > 0 && count < n) {
 				if ((97 <= *ptr_str && *ptr_str <= 122) || (65 <= *ptr_str && *ptr_str <= 90) || (48 <= *ptr_str && *ptr_str <= 57)) { // Операнды
 					output[count] = *ptr_str;
 					count++;
@@ -174,14 +207,16 @@ char* form_POLIS(char* input) {
 						if (*ptr_str == 45) {
 							output[count] = '0';
 							count++;
+							flag_op = 1;
 						}
 						else if (*ptr_str == 43) {
+							flag_op = 1;
 							ptr_str++;
 							continue;
 						}
 					}
-					if (st.size) {
-						if (*ptr_str == 61) {
+					if (st.size) { // Если стек пуст
+						if (*ptr_str == 61) { // Для операции равно
 							cmp = 9;
 						}
 						else {
@@ -242,7 +277,7 @@ char* form_POLIS(char* input) {
 				}
 				ptr_str++;
 			}
-			while (flag > 0 && count < n - 1 && st.Top) {
+			while (flag > 0 && count < n && st.Top) {
 				if (!Pop(&st, &value, &var)) {
 					flag = 0; // ERROR
 					continue;
@@ -278,8 +313,14 @@ int calculate_POLIS(char* str, int* Tab, double* answer) {
 			b = 0;
 			var_a = 0;
 			var_b = 0;
-			if ((97 <= *ptr_str && *ptr_str <= 122) || (65 <= *ptr_str && *ptr_str <= 90) || (48 <= *ptr_str && *ptr_str <= 57)) { // Операнды
+			if ((97 <= *ptr_str && *ptr_str <= 122) || (65 <= *ptr_str && *ptr_str <= 90)) {
 				if (!Push(&st, 0, *ptr_str)) {
+					flag = 0; //ERROR
+					continue;
+				}
+			}
+			else if (48 <= *ptr_str && *ptr_str <= 57) {
+				if (!Push(&st, (double)(*ptr_str - 48), -1)) {
 					flag = 0; //ERROR
 					continue;
 				}
@@ -319,7 +360,7 @@ int calculate_POLIS(char* str, int* Tab, double* answer) {
 					break;
 				case 61: // =
 					if ((97 <= var_b && var_b <= 122) || (65 <= var_b && var_b <= 90)) {
-						Tab[var_b] = a;
+						Tab[0] = var_b; // Занесение кода переменной, которой присваивается значение
 						b = a;
 					}
 					else {

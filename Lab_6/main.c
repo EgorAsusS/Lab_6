@@ -30,6 +30,8 @@ void ClearStek(Stek st);
 char* form_POLIS(char* input);
 int calculate_POLIS(char* str, int* Tab, double* answer);
 char* read_file(char* filepath, int** Tab);
+int check_el(char el);
+
 
 int main() {
 	int* Tab = NULL;
@@ -120,6 +122,24 @@ int main() {
 	return 0;
 }
 
+int check_el(char el) {
+	if ((97 <= el && el <= 122) || (65 <= el && el <= 90)){
+		return 1;
+	}
+	else if (48 <= el && el <= 57) {
+		return 2;
+	}
+	else if (el == 42 || el == 43 || el == 45 || el == 47 || el == 61){
+		return 3;
+	}
+	else if (el == 40 || el == 41) {
+		return 4;
+	}
+	else {
+		return 0;
+	}
+}
+
 char* read_file(char* filepath, int** Tab) {
 	char* input = NULL;
 	if (filepath && Tab) {
@@ -159,7 +179,7 @@ char* read_file(char* filepath, int** Tab) {
 					}
 				}
 				if (fclose(file)) {
-					flag = -4; //
+					flag = -4;
 				}
 				if (flag != -1) {
 					free(input);
@@ -194,6 +214,7 @@ char* form_POLIS(char* input) {
 		int cmp = 0;
 		double value = 0;
 		int var = 0;
+		int flag_el = 0;
 		bool flag_op = 0; // Флаг на операнды на начало
 		if (output) {
 			ptr_str = input;
@@ -201,14 +222,15 @@ char* form_POLIS(char* input) {
 			value = 0;
 			var = 0;
 			while (*ptr_str && flag > 0 && count < n) {
-				if ((97 <= *ptr_str && *ptr_str <= 122) || (65 <= *ptr_str && *ptr_str <= 90) || (48 <= *ptr_str && *ptr_str <= 57)) { // Операнды
+				flag_el = check_el(*ptr_str);
+				if (flag_el == 1 || flag_el == 2) { // Операнды
 					output[count] = *ptr_str;
 					count++;
 					if (flag_op == 0) {
 						flag_op = 1;
 					}
 				}
-				else if ((40 <= *ptr_str && *ptr_str <= 43) || *ptr_str == 45 || *ptr_str == 47 || *ptr_str == 61) { // Операции
+				else if (flag_el == 3 || flag_el == 4) { // Операции
 					if (*ptr_str == 40 || *ptr_str == 61) {
 						flag_op = 0;
 					}
@@ -236,7 +258,6 @@ char* form_POLIS(char* input) {
 							if (cmp > Tab[(unsigned char)var] && *ptr_str != 41) {
 								if (!Push(&st, 0, *ptr_str)) {
 									flag = 0; //ERROR
-									continue;
 								}
 							}
 							else {
@@ -247,20 +268,17 @@ char* form_POLIS(char* input) {
 									}
 									else {
 										flag = 0; // ERROR
-										continue;
 									}
 								}
 								if (flag) {
 									if (*ptr_str != 41) { // Если скобки, то взаимно уничтожаются
 										if (!Push(&st, 0, *ptr_str)) {
 											flag = 0; //ERROR
-											continue;
 										}
 									}
 									else {
 										if (!Pop(&st, &value, &var)) {
 											flag = 0; // ERROR
-											continue;
 										}
 									}
 								}
@@ -269,27 +287,23 @@ char* form_POLIS(char* input) {
 						else {
 							if (!Push(&st, 0, *ptr_str)) {
 								flag = 0; //ERROR
-								continue;
 							}
 						}
 					}
 					else {
 						if (!Push(&st, 0, *ptr_str)) {
 							flag = 0; //ERROR
-							continue;
 						}
 					}
 				}
 				else if (*ptr_str != ' ') {
 					flag = -3;
-					continue;
 				}
 				ptr_str++;
 			}
 			while (flag > 0 && count < n && st.Top) {
 				if (!Pop(&st, &value, &var)) {
 					flag = 0; // ERROR
-					continue;
 				}
 				if (var != 40) { // '(' пропуск
 					output[count] = (char)var;
@@ -314,6 +328,7 @@ int calculate_POLIS(char* str, int* Tab, double* answer) {
 	int flag = -1;
 	int var_a = 0;
 	int var_b = 0;
+	int flag_el = 0;
 	if (str && Tab && answer) {
 		flag = 1;
 		ptr_str = str;
@@ -322,19 +337,18 @@ int calculate_POLIS(char* str, int* Tab, double* answer) {
 			b = 0;
 			var_a = 0;
 			var_b = 0;
-			if ((97 <= *ptr_str && *ptr_str <= 122) || (65 <= *ptr_str && *ptr_str <= 90)) {
+			flag_el = check_el(*ptr_str);
+			if (flag_el == 1) {
 				if (!Push(&st, 0, *ptr_str)) {
 					flag = 0; //ERROR
-					continue;
 				}
 			}
-			else if (48 <= *ptr_str && *ptr_str <= 57) {
+			else if (flag_el == 2) {
 				if (!Push(&st, (double)(*ptr_str - 48), -1)) {
 					flag = 0; //ERROR
-					continue;
 				}
 			}
-			else if (*ptr_str == 42 || *ptr_str == 43 || *ptr_str == 45 || *ptr_str == 47 || *ptr_str == 61) { // Операции
+			else if (flag_el == 3) { // Операция
 				if (!Pop(&st, &a, &var_a)) {
 					flag = 0;
 					continue;
@@ -374,16 +388,14 @@ int calculate_POLIS(char* str, int* Tab, double* answer) {
 					}
 					else {
 						flag = -2; // const = variable
-						continue;
 					}
 					break;
 				}
 				if (!Push(&st, b, -1)) {
 					flag = 0;
-					continue;
 				}
 			}
-			else if (*ptr_str && *ptr_str != ' ') {
+			else if (*ptr_str != ' ') {
 				flag = -3; // Error
 			}
 			ptr_str++;

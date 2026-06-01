@@ -56,7 +56,7 @@ int main() {
 	fclose(file);
 	if (flag > 0) {
 		if (Tab[0]) {
-			printf("%c = %.14lf\n", Tab[0], answer);	
+			printf("%c = %.14lf\n", Tab[0], answer);
 		}
 		else {
 			printf("%.14lf\n", answer);
@@ -153,7 +153,7 @@ char* read_file(char* filepath, int** Tab) {
 								flag = -3;
 							}
 						}
-						else if (flag == 1){
+						else if (flag == 1) {
 							flag = -2; // Некорректное задание переменных
 						}
 					}
@@ -229,18 +229,18 @@ char* form_POLIS(char* input) {
 							cmp = 9;
 						}
 						else {
-							cmp = Tab[*ptr_str];
+							cmp = Tab[(unsigned char)*ptr_str];
 						}
 						if (cmp) {
 							ShowTop(st, &value, &var);
-							if (cmp > Tab[var] && *ptr_str != 41) {
+							if (cmp > Tab[(unsigned char)var] && *ptr_str != 41) {
 								if (!Push(&st, 0, *ptr_str)) {
 									flag = 0; //ERROR
 									continue;
 								}
 							}
 							else {
-								while (flag > 0 && ShowTop(st, &value, &var) && cmp <= Tab[var]) {
+								while (flag > 0 && ShowTop(st, &value, &var) && cmp <= Tab[(unsigned char)var]) {
 									if (Pop(&st, &value, &var)) {
 										output[count] = (char)var;
 										count++;
@@ -339,14 +339,14 @@ int calculate_POLIS(char* str, int* Tab, double* answer) {
 					flag = 0;
 					continue;
 				}
-				if (var_a != -1) {
+				if (var_a > -1) {
 					a = Tab[var_a];
 				}
 				if (!Pop(&st, &b, &var_b)) {
 					flag = 0;
 					continue;
 				}
-				if (var_b != -1 && *ptr_str != 61) {
+				if (var_b > -1 && *ptr_str != 61) {
 					b = Tab[var_b];
 				}
 				switch (*ptr_str) {
@@ -378,7 +378,7 @@ int calculate_POLIS(char* str, int* Tab, double* answer) {
 					}
 					break;
 				}
-				if(!Push(&st, b, -1)){
+				if (!Push(&st, b, -1)) {
 					flag = 0;
 					continue;
 				}
@@ -458,7 +458,7 @@ bool isEmpty(Stek st) {
 void ClearStek(Stek st) {
 	Node* PtrIx = NULL;
 	PtrIx = st.Top;
-	while (PtrIx){
+	while (PtrIx) {
 		PtrIx = st.Top;
 		st.Top = st.Top->next; // Обновление головы
 		free(PtrIx);

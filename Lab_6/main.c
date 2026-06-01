@@ -351,48 +351,48 @@ int calculate_POLIS(char* str, int* Tab, double* answer) {
 			else if (flag_el == 3) { // Операция
 				if (!Pop(&st, &a, &var_a)) {
 					flag = 0;
-					continue;
-				}
-				if (var_a > -1) {
-					a = Tab[var_a];
 				}
 				if (!Pop(&st, &b, &var_b)) {
 					flag = 0;
-					continue;
 				}
-				if (var_b > -1 && *ptr_str != 61) {
-					b = Tab[var_b];
-				}
-				switch (*ptr_str) {
-				case 42: // *
-					b *= a;
-					break;
-				case 43: // +
-					b += a;
-					break;
-				case 45: // -
-					b -= a;
-					break;
-				case 47: // /
-					if (a) {
-						b /= a;
+				if (flag) {
+					if (var_a > -1) {
+						a = Tab[var_a];
 					}
-					else {
-						flag = -2; // Error with / 0
+					if (var_b > -1 && *ptr_str != 61) {
+						b = Tab[var_b];
 					}
-					break;
-				case 61: // =
-					if ((97 <= var_b && var_b <= 122) || (65 <= var_b && var_b <= 90)) {
-						Tab[0] = var_b; // Занесение кода переменной, которой присваивается значение
-						b = a;
+					switch (*ptr_str) {
+					case 42: // *
+						b *= a;
+						break;
+					case 43: // +
+						b += a;
+						break;
+					case 45: // -
+						b -= a;
+						break;
+					case 47: // /
+						if (a) {
+							b /= a;
+						}
+						else {
+							flag = -2; // Error with / 0
+						}
+						break;
+					case 61: // =
+						if ((97 <= var_b && var_b <= 122) || (65 <= var_b && var_b <= 90)) {
+							Tab[0] = var_b; // Занесение кода переменной, которой присваивается значение
+							b = a;
+						}
+						else {
+							flag = -2; // const = variable
+						}
+						break;
 					}
-					else {
-						flag = -2; // const = variable
+					if (!Push(&st, b, -1)) {
+						flag = 0;
 					}
-					break;
-				}
-				if (!Push(&st, b, -1)) {
-					flag = 0;
 				}
 			}
 			else if (*ptr_str != ' ') {

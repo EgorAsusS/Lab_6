@@ -124,18 +124,18 @@ int main() {
 
 int check_el(char el) {
 	if ((97 <= el && el <= 122) || (65 <= el && el <= 90)){
-		return 1;
+		return 1; // variable
 	}
 	else if (48 <= el && el <= 57) {
-		return 2;
+		return 2; // const
 	}
 	else if (el == 42 || el == 43 || el == 45 || el == 47 || el == 61){
-		return 3;
+		return 3; // operations
 	}
 	else if (el == 40 || el == 41) {
-		return 4;
+		return 4; // brackets ()
 	}
-	else {
+	else { // other symbols
 		return 0;
 	}
 }

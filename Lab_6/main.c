@@ -457,16 +457,12 @@ bool isEmpty(Stek st) {
 
 void ClearStek(Stek st) {
 	Node* PtrIx = NULL;
-	//while (st) {
-		//Node* PtrIx = st->Top;
 	PtrIx = st.Top;
-	if (PtrIx) {
+	while (PtrIx){
+		PtrIx = st.Top;
 		st.Top = st.Top->next; // Обновление головы
-		//st->Top = st->Top->next; // Обновление головы
 		free(PtrIx);
 		PtrIx = NULL;
-		//st->size--;
 		st.size--;
 	}
-	//}
 }

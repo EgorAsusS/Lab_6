@@ -236,7 +236,7 @@ char* form_POLIS(char* input) {
 							if (cmp > Tab[var] && *ptr_str != 41) {
 								if (!Push(&st, 0, *ptr_str)) {
 									flag = 0; //ERROR
-									//continue;
+									continue;
 								}
 							}
 							else {

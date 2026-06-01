@@ -42,10 +42,18 @@ int main() {
 	char el = 0;
 
 	// Для ручных тестов
-
+	printf("Test from data.txt\n");
 	input = read_file("data.txt", &Tab);
 	output = form_POLIS(input);
 	flag = calculate_POLIS(output, Tab, &answer);
+
+	file = fopen("data.txt", "r");
+	while (fscanf(file, "%c", &el) > 0) {
+		printf("%c", el);
+	}
+	printf("\n\n");
+
+	fclose(file);
 	if (flag > 0) {
 		if (Tab[0]) {
 			printf("%c = %.14lf\n", Tab[0], answer);	
@@ -57,6 +65,7 @@ int main() {
 	else {
 		printf("ERROR\n");
 	}
+	printf("\n\n");
 
 	// Тесты подряд с файлов
 	for (int i = 1; i < 16; i++) {

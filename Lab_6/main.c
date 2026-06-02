@@ -216,6 +216,7 @@ char* form_POLIS(char* input) {
 		int var = 0;
 		int flag_el = 0;
 		bool flag_op = 0; // Флаг на операнды на начало
+		bool flag_bracket = 0; // Флаг на пустые скобки
 		if (output) {
 			ptr_str = input;
 			cmp = 0;
@@ -261,8 +262,10 @@ char* form_POLIS(char* input) {
 								}
 							}
 							else {
+                                flag_bracket = 1;
 								while (flag > 0 && ShowTop(st, &value, &var) && cmp <= Tab[(unsigned char)var]) {
 									if (Pop(&st, &value, &var)) {
+                                        flag_bracket = 0;
 										output[count] = (char)var;
 										count++;
 									}
@@ -270,7 +273,10 @@ char* form_POLIS(char* input) {
 										flag = 0; // ERROR
 									}
 								}
-								if (flag) {
+                                if(flag_bracket){
+                                    flag = 0;
+                                }
+                                if (flag) {
 									if (*ptr_str != 41) { // Если скобки, то взаимно уничтожаются
 										if (!Push(&st, 0, *ptr_str)) {
 											flag = 0; //ERROR
